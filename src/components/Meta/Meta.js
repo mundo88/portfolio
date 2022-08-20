@@ -1,7 +1,7 @@
 import Head from 'next/head';
 
 const siteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL;
-const name = 'Quang Minh';
+const name = 'Minh Phung';
 const twitterHandle = '@modunnn';
 const defaultOgImage = `https://phungvanminh.com/social-image.png`;
 

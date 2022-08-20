@@ -5,7 +5,7 @@ addons.setConfig({
   theme: {
     ...themes.dark,
     brandImage: 'https://phungvanminh.com/icon.svg',
-    brandTitle: 'Quang Minh Components',
+    brandTitle: 'Minh Phung Components',
     brandUrl: 'https://phungvanminh.com',
   },
 });
