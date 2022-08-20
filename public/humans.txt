@@ -1,0 +1,39 @@
+__  __  __
+\ \ \ \ \/
+ \ \/\ \
+  \/  \/
+
+The humans.txt file explains the team, technology,
+and graphic assets behind this site humanstxt.org.
+
+_______________________________________________________________________________
+
+DESIGNER | デザイナー
+
+Quang Minh
+Hand crafted design & web development
+
+Design tools:
+Figma
+Photoshop
+Blender
+
+twitter.com/malangthang344
+github.com/dinhquangminh98
+facebook.com/boytubi.20cm
+instagram.com/quang.minh._.79
+_______________________________________________________________________________
+
+TECHNOLOGY | テクノロジー
+
+React
+Next.js
+Three.js
+Framer Motion
+
+_______________________________________________________________________________
+
+FONTS | フォント
+
+Gotham
+Hiragino Kaku Gothic

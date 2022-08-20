@@ -1,0 +1,20 @@
+{
+  "env": {
+    "es6": true
+  },
+  "extends": ["eslint:recommended", "next/core-web-vitals", "eslint-plugin-prettier"],
+  "plugins": ["eslint-plugin-prettier"],
+  "rules": {
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "off"
+      }
+    ],
+    "semi": "error",
+    "no-unused-vars": "warn",
+    "import/no-anonymous-default-export": "off",
+    "react/display-name": "off",
+    "@next/next/no-img-element": "off"
+  }
+}

@@ -1,0 +1,478 @@
+---
+title: Quickstart SQLAlchemy in Flask-Application
+abstract: Flask-SQLAlchemy is fun to use, incredibly easy for basic applications, and readily extends for larger applications. For the complete guide, checkout the API documentation on the SQLAlchemy class.
+date: '2022-08-19'
+banner: /static/modern-react-css-banner.jpg
+---
+
+[Flask](https://palletsprojects.com/p/flask/) is a lightweight Python web framework that provides useful tools and features for creating web applications in the Python Language. [SQLAlchemy](https://www.sqlalchemy.org/) is an SQL toolkit that provides efficient and high-performing database access for relational databases. It provides ways to interact with several database engines such as SQLite, MySQL, and PostgreSQL. It gives you access to the database’s SQL functionalities. And it also gives you an Object Relational Mapper (ORM), which allows you to make queries and handle data using simple Python objects and methods. `Flask-SQLAlchemy` is a `Flask` extension that makes using `SQLAlchemy` with Flask easier, providing you tools and methods to interact with your database in your Flask applications through `SQLAlchemy`.
+
+In this tutorial, you’ll use `Flask` and `Flask-SQLAlchemy` to create an employee management system with a database that has a table for employees. Each `employee` will have a unique ID, a first name, a last name, a unique email, an integer value for their age, a date for the day they joined the company, and a boolean value to determine whether an `employee` is currently active or out of office.
+
+You’ll use the Flask shell to query a table, and get table records based on a column value (for example, an email). You’ll retrieve employees’ records on certain conditions, such as getting only active employees or getting a list of out-of-office employees. You’ll order the results by a column value, and count and limit query results. Finally, you’ll use pagination to display a certain number of employees per page in a web application.
+
+#### Prerequisites
+
+- A local Python 3 programming environment. Follow the tutorial for your distribution in How To Install and Set Up a Local Programming Environment for Python 3 series. In this tutorial we’ll call our project directory `flask_app`.
+- An understanding of basic `Flask` concepts, such as routes, view functions, and templates. If you are not familiar with `Flask`, check out How to Create Your First Web Application Using `Flask` and Python and How to Use Templates in a Flask Application.
+- An understanding of basic HTML concepts. You can review our How To Build a Website with HTML tutorial series for background knowledge.
+- An understanding of basic `Flask-SQLAlchemy` concepts, such as setting up a database, creating database models, and inserting data into the database. See How to Use `Flask-SQLAlchemy` to Interact with Databases in a Flask Application for background knowledge.
+
+## Step 1 — Setting up the Database and Model
+
+In this step, you’ll install the necessary packages, and set up your `Flask` application, the `Flask-SQLAlchemy` database, and the `employee` model that represents the `employee` table where you’ll store your employee data. You’ll insert a few employees into the employee table, and add a route and a page where all employees are displayed on your application’s index page.
+
+```shell
+(env)sammy@localhost:$ pip install Flask Flask-SQLAlchemy
+```
+
+Once the installation is complete, you will receive output with the following line at the end:
+
+```
+Successfully installed Flask-2.1.2 Flask-SQLAlchemy-2.5.1 Jinja2-3.1.2 MarkupSafe-2.1.1 SQLAlchemy-1.4.37 Werkzeug-2.1.2 click-8.1.3 greenlet-1.1.2 itsdangerous-2.1.2
+```
+
+With the required packages installed, open a new file called `app.py` in your `flask_app` directory. This file will have code for setting up the database and your Flask routes:
+
+```shell
+(env)sammy@localhost:$ nano app.py
+```
+
+Add the following code to `app.py`. This code will set up an SQLite database and an empl`oyee database model representing the employee table you’ll use to store your employee data:
+
+```Python
+#flask_app/app.py
+
+import os
+from flask import Flask, render_template, request, url_for, redirect
+from flask_sqlalchemy import SQLAlchemy
+
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] =\
+        'sqlite:///' + os.path.join(basedir, 'database.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+
+class Employee(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    firstname = db.Column(db.String(100), nullable=False)
+    lastname = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    age = db.Column(db.Integer, nullable=False)
+    hire_date = db.Column(db.Date, nullable=False)
+    active = db.Column(db.Boolean, nullable=False)
+
+    def __repr__(self):
+        return f'<Employee {self.firstname} {self.lastname}>'
+```
+
+Save and close the file.
+Here, you import the [`os`](https://docs.python.org/3/library/os.html) module, which gives you access to miscellaneous operating system interfaces. You’ll use it to construct a file path for your `database.db` database file.
+
+From the `flask` package, you import helpers you need for your application: the `Flask` class to create a Flask application instance, `render_template()` to render templates, the request object to handle requests, `url_for()` to construct URLs, and the `redirect()` function for redirecting users. For more information on routes and templates, see [`How To Use Templates in a Flask Application`](https://www.digitalocean.com/community/tutorials/how-to-use-templates-in-a-flask-application).
+
+You then import the `SQLAlchemy` class from the `Flask-SQLAlchemy` extension, which gives you access to all the functions and classes from `SQLAlchemy`, in addition to helpers and functionality that integrates Flask with `SQLAlchemy`. You’ll use it to create a database object that connects to your Flask application.
+
+To construct a path for your database file, you define a base directory as the current directory. You use the [`os.path.abspath()`](https://docs.python.org/3.8/library/os.path.html#os.path.abspath) function to get the absolute path of the current file’s directory. The special `_file_` variable holds the pathname of the current `app.py` file. You store the absolute path of the base directory in a variable called `basedir`.
+
+You then create a Flask application instance called app, which you use to configure two Flask-SQLAlchemy configuration keys:
+
+- `SQLALCHEMY_DATABASE_URI`: The database URI to specify the database you want to establish a connection with. In this case, the URI follows the format `sqlite:///path/to/database.db`. You use the `os.path.join()` function to intelligently join the base directory you constructed and stored in the basedir variable with the `database.db` file name. This will connect to a `database.db` database file in your `flask_app` directory. The file will be created once you initiate the database.
+- `SQLALCHEMY_TRACK_MODIFICATIONS`: A configuration to enable or disable tracking modifications of objects. You set it to `False` to disable tracking, which uses less memory. For more, see the [`the configuration page`](https://flask-sqlalchemy.palletsprojects.com/en/2.x/config/) in the Flask-SQLAlchemy documentation.
+
+After configuring `SQLAlchemy` by setting a database URI and disabling tracking, you create a database object using the SQLAlchemy class, passing the application instance to connect your Flask application with `SQLAlchemy`. You store your database object in a variable called `db`, which you’ll use to interact with your database.
+
+After setting up the application instance and the database object, you inherit from the `db.Model` class to create a database model called `Employee`. This model represents the emp`loyee table, and it has the following columns:
+
+- `id`: The employee ID, an integer primary key.
+- `firstname`: The employee’s first name, a string with a maximum length of 100 characters. `nullable=False` signifies that this column should not be empty.
+- `lastname`: The employee’s last name, a string with a maximum length of 100 characters. `nullable=False` signifies that this column should not be empty.
+- `email`: The employee’s email, a string with a maximum length of 100 characters. `unique=True` signifies that each email should be unique. `nullable=False` signifies that it’s value should not be empty.
+- `age`: The employee’s age, an integer value.
+- `hire_date`: The date at which the employee was hired. You set db.Date as the column type to declare it as a column that holds dates.
+- `active`: A column which will hold a boolean value to indicate whether the employee is currently active or out of office.
+
+The special **repr** function allows you to give each object a string representation to recognize it for debugging purposes. In this case, you use the employee’s first and last name to represent each employee object.
+
+Now that you’ve set the database connection and the `employee` model, you’ll write a Python program to create your database and employee table and populate the table with some employee data.
+
+Open a new file called `init_db.py` in your `flask_app` directory:
+
+```shell
+(env)sammy@localhost:$ nano init_db.py
+```
+
+Add the following code to delete existing database tables to start from a clean database, create the `employee` table, and insert nine employees into it:
+
+```Python
+#flask_app/init_db.py
+
+from datetime import date
+from app import db, Employee
+
+db.drop_all()
+db.create_all()
+
+e1 = Employee(firstname='John',
+              lastname='Doe',
+              email='jd@example.com',
+              age=32,
+              hire_date=date(2012, 3, 3),
+              active=True
+              )
+
+e2 = Employee(firstname='Mary',
+              lastname='Doe',
+              email='md@example.com',
+              age=38,
+              hire_date=date(2016, 6, 7),
+              active=True
+              )
+
+e3 = Employee(firstname='Jane',
+              lastname='Tanaka',
+              email='jt@example.com',
+              age=32,
+              hire_date=date(2015, 9, 12),
+              active=False
+              )
+
+e4 = Employee(firstname='Alex',
+              lastname='Brown',
+              email='ab@example.com',
+              age=29,
+              hire_date=date(2019, 1, 3),
+              active=True
+              )
+
+e5 = Employee(firstname='James',
+              lastname='White',
+              email='jw@example.com',
+              age=24,
+              hire_date=date(2021, 2, 4),
+              active=True
+              )
+
+e6 = Employee(firstname='Harold',
+              lastname='Ishida',
+              email='hi@example.com',
+              age=52,
+              hire_date=date(2002, 3, 6),
+              active=False
+              )
+
+e7 = Employee(firstname='Scarlett',
+              lastname='Winter',
+              email='sw@example.com',
+              age=22,
+              hire_date=date(2021, 4, 7),
+              active=True
+              )
+
+e8 = Employee(firstname='Emily',
+              lastname='Vill',
+              email='ev@example.com',
+              age=27,
+              hire_date=date(2019, 6, 9),
+              active=True
+              )
+
+e9 = Employee(firstname='Mary',
+              lastname='Park',
+              email='mp@example.com',
+              age=30,
+              hire_date=date(2021, 8, 11),
+              active=True
+              )
+
+db.session.add_all([e1, e2, e3, e4, e5, e6, e7, e8, e9])
+
+db.session.commit()
+```
+
+Here, you import the `date()` class from the `datetime` module to use it to set employee hire dates.
+
+You import the database object and the `Employee` model. You call the `db.drop_all()` function to delete all existing tables to avoid the chance of an already populated employee table existing in the database, which might cause issues. This deletes all database data whenever you execute the` init_db.py` program. For more information on creating, modifying, and deleting database tables, see How to Use Flask-SQLAlchemy to Interact with Databases in a Flask Application.
+
+You then create several instances of the `Employee` model, which represent the employees you’ll query in this tutorial, and add them to the database session using the `db.session.add_all()` function. Lastly, you commit the transaction and apply the changes to the database using the `db.session.commit()`.
+
+Save and close the file.
+
+Execute the `init_db.py` program:
+
+```shell
+(env)sammy@localhost:$ python init_db.py
+```
+
+To take a look at the data you added to your database, make sure your virtual environment is activated, and open the Flask shell to query all employees and display their data:
+
+```shell
+(env)sammy@localhost:$ flask shell
+```
+
+```python
+>>> from app import db, Employee
+>>>
+>>>
+>>> employees = Employee.query.all()
+>>>
+>>> for employee in employees:
+>>>    print(employee.firstname, employee.lastname)
+>>>    print('Email:', employee.email)
+>>>    print('Age:', employee.age)
+>>>    print('Hired:', employee.hire_date)
+>>>    if employee.active:
+>>>        print('Active')
+>>>    else:
+>>>        print('Out of Office')
+>>>    print('----')
+```
+
+You use the `all()` method of the query attribute to get all employees. You loop through the results, and display `employee` information. For the active column, you use a conditional statement to display the current status of the employee, either `'Active'` or `'Out of Office'`.
+
+You’ll receive the following output:
+
+```
+#Output
+John Doe
+Email: jd@example.com
+Age: 32
+Hired: 2012-03-03
+Active
+----
+Mary Doe
+Email: md@example.com
+Age: 38
+Hired: 2016-06-07
+Active
+----
+Jane Tanaka
+Email: jt@example.com
+Age: 32
+Hired: 2015-09-12
+Out of Office
+----
+Alex Brown
+Email: ab@example.com
+Age: 29
+Hired: 2019-01-03
+Active
+----
+James White
+Email: jw@example.com
+Age: 24
+Hired: 2021-02-04
+Active
+----
+Harold Ishida
+Email: hi@example.com
+Age: 52
+Hired: 2002-03-06
+Out of Office
+----
+Scarlett Winter
+Email: sw@example.com
+Age: 22
+Hired: 2021-04-07
+Active
+----
+Emily Vill
+Email: ev@example.com
+Age: 27
+Hired: 2019-06-09
+Active
+----
+Mary Park
+Email: mp@example.com
+Age: 30
+Hired: 2021-08-11
+Active
+----
+```
+
+You can see that all of the employees we’ve added to the database are properly displayed.
+
+```
+>>> exit()
+```
+
+Next, you’ll create a Flask route to display employees. Open `app.py` for editing:
+
+```shell
+(env)sammy@localhost:$ nano app.py
+```
+
+Add the following route at the end of the file:
+
+```Python
+#flask_app/app.py
+...
+
+@app.route('/')
+def index():
+    employees = Employee.query.all()
+    return render_template('index.html', employees=employees)
+```
+
+Save and close the file.
+
+This queries all employees, renders an `index.html` template, and passes it the employees you fetch.
+
+Create a templates directory and a [`base template`](https://www.digitalocean.com/community/tutorials/how-to-use-templates-in-a-flask-application):
+
+```Shell
+(env)sammy@localhost:$ mkdir templates
+(env)sammy@localhost:$ nano templates/base.html
+```
+
+Add the following to `base.html`:
+
+```Jinja2
+#flask_app/templates/base.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %} {% endblock %} - FlaskApp</title>
+    <style>
+        .title {
+            margin: 5px;
+        }
+
+        .content {
+            margin: 5px;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+
+        .employee {
+            flex: 20%;
+            padding: 10px;
+            margin: 5px;
+            background-color: #f3f3f3;
+            inline-size: 100%;
+        }
+
+        .name {
+            color: #00a36f;
+            text-decoration: none;
+        }
+
+        nav a {
+            color: #d64161;
+            font-size: 3em;
+            margin-left: 50px;
+            text-decoration: none;
+        }
+
+        .pagination {
+            margin: 0 auto;
+        }
+
+        .pagination span {
+            font-size: 2em;
+            margin-right: 10px;
+        }
+
+        .page-number {
+            color: #d64161;
+            padding: 5px;
+            text-decoration: none;
+        }
+
+        .current-page-number {
+            color: #666
+        }
+
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">FlaskApp</a>
+        <a href="#">About</a>
+    </nav>
+    <hr>
+    <div class="content">
+        {% block content %} {% endblock %}
+    </div>
+</body>
+</html>
+```
+
+Save and close the file.
+
+Here, you use a title block and add some CSS styling. You add a navbar with two items, one for the index page, and one for an inactive About page. This navbar will be reused throughout the application in the templates that inherit from this base template. The content block will be replaced with the content of each page. For more on templates, check out How to Use Templates in a Flask Application.
+
+Next, open a new `index.html` template you rendered in `app.py`:
+
+```Shell
+(env)sammy@localhost:$ nano templates/index.html
+```
+
+Add the following code to the file:
+
+```Jinja2
+#flask_app/templates/index.html
+
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1 class="title">{% block title %} Employees {% endblock %}</h1>
+    <div class="content">
+        {% for employee in employees %}
+            <div class="employee">
+                <p><b>#{{ employee.id }}</b></p>
+                <b>
+                    <p class="name">{{ employee.firstname }} {{ employee.lastname }}</p>
+                </b>
+                <p>{{ employee.email }}</p>
+                <p>{{ employee.age }} years old.</p>
+                <p>Hired: {{ employee.hire_date }}</p>
+                {% if employee.active %}
+                    <p><i>(Active)</i></p>
+                {% else %}
+                    <p><i>(Out of Office)</i></p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+```
+
+Here, you loop through employees and display each employee’s information. If the employee is active you add an **(Active)** label, otherwise you display an **(Out of Office)** label.
+
+Save and close the file.
+
+While in your `flask_app` directory with your virtual environment activated, tell Flask about the application (`app.py` in this case) using the `FLASK_APP` environment variable. Then set the `FLASK_ENV` environment variable to `development` to run the application in development mode and get access to the debugger. For more information about the Flask debugger, see How To Handle Errors in a Flask Application. Use the following commands to do this:
+
+```Shell
+(env)sammy@localhost:$ export FLASK_APP=app
+(env)sammy@localhost:$ export FLASK_ENV=development
+```
+
+Next, run the application:
+
+```Shell
+(env)sammy@localhost:$ flask run
+
+```
+
+With the development server running, visit the following URL using your browser:
+
+```Shell
+http://127.0.0.1:5000/
+```
+
+You’ll see the employees you added to the database in a page similar to the following:
+![Thumbnail](https://assets.digitalocean.com/articles/68400/Employees_Page.png)
+Leave the server running, open another terminal, and continue to the next step.
+
+You’ve displayed the employees you have in your database on the index page. Next, you’ll use the Flask shell to query employees using different methods.
