@@ -145,7 +145,7 @@ export const Uses = () => {
                   </TableRow>
                   <TableRow>
                     <TableHeadCell>Laptop</TableHeadCell>
-                    <TableCell>Macbook Pro 14″ (2022 M1 Max)</TableCell>
+                    <TableCell>Macbook Pro 14″ (2020 M1)</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableHeadCell>Headphones</TableHeadCell>
